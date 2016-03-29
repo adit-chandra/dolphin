@@ -12,9 +12,6 @@
 #include "Core/MemoryWatcher.h"
 #include "Core/HW/Memmap.h"
 
-// We don't want to kill the cpu, so sleep for this long after polling.
-static const int SLEEP_DURATION = 2; // ms
-
 MemoryWatcher::MemoryWatcher()
 {
 	if (!LoadAddresses(File::GetUserPath(F_MEMORYWATCHERLOCATIONS_IDX)))
@@ -31,6 +28,7 @@ MemoryWatcher::~MemoryWatcher()
 		return;
 
 	m_running = false;
+	Poll();
 	m_watcher_thread.join();
 	close(m_fd);
 }
@@ -85,6 +83,11 @@ std::string MemoryWatcher::ComposeMessage(const std::string& line, u32 value)
 	return message_stream.str();
 }
 
+void MemoryWatcher::Poll()
+{
+	m_poll.Set();
+}
+
 void MemoryWatcher::WatcherThread()
 {
 	while (m_running)
@@ -109,6 +112,6 @@ void MemoryWatcher::WatcherThread()
 					sizeof(m_addr));
 			}
 		}
-		Common::SleepCurrentThread(SLEEP_DURATION);
+		m_poll.Wait();
 	}
 }

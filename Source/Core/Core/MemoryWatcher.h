@@ -10,6 +10,7 @@
 #include <vector>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include "Common/Event.h"
 
 // MemoryWatcher reads a file containing in-game memory addresses and outputs
 // changes to those memory addresses to a unix domain socket as the game runs.
@@ -25,6 +26,8 @@ public:
 	MemoryWatcher();
 	~MemoryWatcher();
 
+	void Poll();
+
 private:
 	bool LoadAddresses(const std::string& path);
 	bool OpenSocket(const std::string& path);
@@ -37,6 +40,7 @@ private:
 
 	std::thread m_watcher_thread;
 	std::atomic_bool m_running{false};
+	Common::Event m_poll;
 
 	int m_fd;
 	sockaddr_un m_addr;

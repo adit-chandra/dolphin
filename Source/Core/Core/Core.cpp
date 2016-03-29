@@ -791,6 +791,7 @@ void Callback_VideoCopiedToXFB(bool video_update)
 		s_drawn_frame++;
 
 	Movie::FrameUpdate();
+	s_memory_watcher->Poll();
 }
 
 void UpdateTitle()
