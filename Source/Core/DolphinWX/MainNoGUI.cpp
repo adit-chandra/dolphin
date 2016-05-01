@@ -16,6 +16,7 @@
 #include "Core/BootManager.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
+#include "Core/Movie.h"
 #include "Core/Host.h"
 #include "Core/State.h"
 #include "Core/HW/Wiimote.h"
@@ -301,11 +302,11 @@ static Platform* GetPlatform()
 
 int main(int argc, char* argv[])
 {
-	std::string boot_filename;
 	std::unique_ptr<optparse::OptionParser> parser = CommandLineParse::CreateParser(false);
 	optparse::Values& options = CommandLineParse::ParseArguments(parser.get(), argc, argv);
 	std::vector<std::string> args = parser->args();
 
+	std::string boot_filename;
 	if (options.is_set("exec"))
 	{
 		boot_filename = (const char*)options.get("exec");
@@ -320,7 +321,10 @@ int main(int argc, char* argv[])
 	if (options.is_set("user"))
 	{
 	  user_directory = (const char*)options.get("user");
-	  std::cout << "User directory " << user_directory << std::endl;
+  }
+  else
+  {
+    user_directory = "";
   }
 
 	platform = GetPlatform();
@@ -334,7 +338,18 @@ int main(int argc, char* argv[])
 	UICommon::Init();
 
 	platform->Init();
-	if (!BootManager::BootCore(boot_filename))
+  
+  if (options.is_set("movie"))
+  {
+    std::string movie_file = (const char*)options.get("movie");
+    if (!Movie::PlayInput(movie_file))
+	  {
+		  fprintf(stderr, "Could not play movie %s\n", movie_file.c_str());
+		  return 1;
+	  }
+  }
+  
+  if (!BootManager::BootCore(boot_filename))
 	{
 		fprintf(stderr, "Could not boot %s\n", boot_filename.c_str());
 		return 1;
