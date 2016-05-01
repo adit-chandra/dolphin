@@ -823,16 +823,25 @@ void ReadHeader()
 bool PlayInput(const std::string& filename)
 {
 	if (s_playMode != MODE_NONE)
+	{
+	  std::cout << "s_playMode != MODE_NONE" <<  std::endl;
 		return false;
-
+  }
+  
 	if (!File::Exists(filename))
+	{
+	  std::cout << filename << " doesn't exist" << std::endl;
 		return false;
+	}
 
 	File::IOFile g_recordfd;
 
 	if (!g_recordfd.Open(filename, "rb"))
+	{
+	  std::cout << "!g_recordfd.Open(" << filename << ", \"rb\")" << std::endl;
 		return false;
-
+  }
+  
 	g_recordfd.ReadArray(&tmpHeader, 1);
 
 	if (!IsMovieHeader(tmpHeader.filetype))
@@ -854,7 +863,7 @@ bool PlayInput(const std::string& filename)
 	s_playMode = MODE_PLAYING;
 
 	// Wiimotes cause desync issues if they're not reset before launching the game
-	Wiimote::ResetAllWiimotes();
+	//Wiimote::ResetAllWiimotes();
 
 	Core::UpdateWantDeterminism();
 
