@@ -310,16 +310,18 @@ int main(int argc, char* argv[])
 	{
 		boot_filename = (const char*)options.get("exec");
 	}
-	else if (args.size())
-	{
-		boot_filename = args.front();
-		args.erase(args.begin());
-	}
 	else
 	{
 		parser->print_help();
 		return 0;
 	}
+	
+	std::string user_directory;
+	if (options.is_set("user"))
+	{
+	  user_directory = (const char*)options.get("user");
+	  std::cout << "User directory " << user_directory << std::endl;
+  }
 
 	platform = GetPlatform();
 	if (!platform)
@@ -328,11 +330,10 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	UICommon::SetUserDirectory(""); // Auto-detect user folder
+	UICommon::SetUserDirectory(user_directory); // Auto-detect user folder
 	UICommon::Init();
 
 	platform->Init();
-
 	if (!BootManager::BootCore(boot_filename))
 	{
 		fprintf(stderr, "Could not boot %s\n", boot_filename.c_str());
