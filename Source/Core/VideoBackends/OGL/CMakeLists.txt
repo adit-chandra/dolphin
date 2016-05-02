@@ -17,8 +17,11 @@ set(SRCS
 set(LIBS	${LIBS}
 			videocommon
 			SOIL
-			common
-			${X11_LIBRARIES})
+			common)
+
+if(USE_X11)
+  set(LIBS  ${LIBS} ${X11_LIBRARIES})
+endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD|NetBSD")
 	set(LIBS	${LIBS} usbhid)
