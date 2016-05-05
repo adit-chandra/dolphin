@@ -116,7 +116,7 @@ void Host_ShowVideoConfig(void*, const std::string&, const std::string&) {}
 
 #if HAVE_X11
 #include <X11/keysym.h>
-#include "DolphinWX/X11Utils.h"
+#include "UICommon/X11Utils.h"
 
 class PlatformX11 : public Platform
 {
@@ -316,7 +316,7 @@ int main(int argc, char* argv[])
 		parser->print_help();
 		return 0;
 	}
-	
+
 	std::string user_directory;
 	if (options.is_set("user"))
 	{
@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
 	UICommon::Init();
 
 	platform->Init();
-  
+
   if (options.is_set("movie"))
   {
     std::string movie_file = (const char*)options.get("movie");
@@ -348,7 +348,7 @@ int main(int argc, char* argv[])
 		  return 1;
 	  }
   }
-  
+
   if (!BootManager::BootCore(boot_filename))
 	{
 		fprintf(stderr, "Could not boot %s\n", boot_filename.c_str());

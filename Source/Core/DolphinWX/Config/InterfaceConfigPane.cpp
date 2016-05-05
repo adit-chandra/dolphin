@@ -24,7 +24,7 @@
 #include "DolphinWX/Config/InterfaceConfigPane.h"
 
 #if defined(HAVE_XRANDR) && HAVE_XRANDR
-#include "DolphinWX/X11Utils.h"
+#include "UICommon/X11Utils.h"
 #endif
 
 static const wxLanguage language_ids[] =

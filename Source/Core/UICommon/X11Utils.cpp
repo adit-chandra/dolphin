@@ -9,7 +9,7 @@
 #include "Common/Logging/Log.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "DolphinWX/X11Utils.h"
+#include "UICommon/X11Utils.h"
 
 extern char **environ;
 
@@ -17,7 +17,7 @@ extern char **environ;
 #include <algorithm>
 #include <string>
 
-#include "DolphinWX/WxUtils.h"
+//#include "DolphinWX/WxUtils.h"
 #endif
 
 namespace X11Utils
