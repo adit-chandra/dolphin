@@ -22,7 +22,7 @@ elseif(APPLE)
 				ControllerInterface/OSX/OSXJoystick.mm
 				ControllerInterface/ForceFeedback/ForceFeedbackDevice.cpp)
 	set(LIBS ${LIBS} ${COREFOUNDATION_LIBRARY} ${CARBON_LIBRARY} ${COCOA_LIBRARY})
-elseif(X11_FOUND)
+elseif(USE_X11)
 	set(SRCS	${SRCS}
 				ControllerInterface/Xlib/Xlib.cpp)
 	if(XINPUT2_FOUND)
