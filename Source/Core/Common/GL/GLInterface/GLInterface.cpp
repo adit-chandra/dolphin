@@ -7,21 +7,21 @@
 #include "Common/GL/GLInterfaceBase.h"
 
 #if defined(__APPLE__)
-#include "Common/GL/GLInterface/AGL.h"
+  #include "Common/GL/GLInterface/AGL.h"
 #elif defined(_WIN32)
-#include "Common/GL/GLInterface/WGL.h"
+  #include "Common/GL/GLInterface/WGL.h"
 #elif HAVE_X11
-#if defined(USE_EGL) && USE_EGL
-#include "Common/GL/GLInterface/EGLX11.h"
-#else
-#include "Common/GL/GLInterface/GLX.h"
-#endif
+  #if defined(USE_EGL) && USE_EGL
+    #include "Common/GL/GLInterface/EGLX11.h"
+  #else
+    #include "Common/GL/GLInterface/GLX.h"
+  #endif
 #elif defined(USE_EGL) && USE_EGL && defined(USE_HEADLESS)
-#include "Common/GL/GLInterface/EGL.h"
+  #include "Common/GL/GLInterface/EGL.h"
 #elif ANDROID
-#include "Common/GL/GLInterface/EGLAndroid.h"
+  #include "Common/GL/GLInterface/EGLAndroid.h"
 #else
-#error Platform doesnt have a GLInterface
+  #error Platform doesnt have a GLInterface
 #endif
 
 std::unique_ptr<cInterfaceBase> HostGL_CreateGLInterface()
