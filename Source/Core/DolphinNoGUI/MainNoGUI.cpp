@@ -8,6 +8,7 @@
 #include <string>
 #include <unistd.h>
 
+#include "Common/Thread.h"
 #include "Common/CommonTypes.h"
 #include "Common/Event.h"
 #include "Common/MsgHandler.h"
@@ -38,7 +39,7 @@ class Platform
 public:
 	virtual void Init() {}
 	virtual void SetTitle(const std::string &title) {}
-	virtual void MainLoop() { while(running) {} }
+	virtual void MainLoop() { while(running) {Common::SleepCurrentThread(100);} }
 	virtual void Shutdown() {}
 	virtual ~Platform() {}
 };
