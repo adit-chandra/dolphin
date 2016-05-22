@@ -74,6 +74,11 @@ void Init(std::vector<Core::Device*>& devices)
 	fst = File::ScanDirectoryTree(dir_path, false);
 	if (!fst.isDirectory)
 		return;
+  
+  auto cmp = [] (const File::FSTEntry& f1, const File::FSTEntry& f2) { return f1.physicalName < f2.physicalName; };
+  
+  std::sort(fst.children.begin(), fst.children.end(), cmp);
+	
 	for (unsigned int i = 0; i < fst.size; ++i)
 	{
 		const File::FSTEntry& child = fst.children[i];
