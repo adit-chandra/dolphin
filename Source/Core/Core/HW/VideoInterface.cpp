@@ -18,7 +18,6 @@
 #include "Core/HW/VideoInterface.h"
 #include "VideoCommon/VideoBackendBase.h"
 #include "VideoCommon/VideoConfig.h"
-#include <zmq.hpp>
 
 namespace VideoInterface
 {
@@ -729,6 +728,7 @@ static void EndField()
 {
 	g_video_backend->Video_EndField();
 	Core::VideoThrottle();
+	Core::FrameAdvance();
 }
 
 // Purpose: Send VI interrupt when triggered
