@@ -5,34 +5,18 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <unistd.h>
 
 #include "Common/FileUtil.h"
-#include "Common/Thread.h"
 #include "Core/MemoryWatcher.h"
 #include "Core/HW/Memmap.h"
 
-// We don't want to kill the cpu, so sleep for this long after polling.
-static const int SLEEP_DURATION = 2; // ms
-
-MemoryWatcher::MemoryWatcher()
+MemoryWatcher::MemoryWatcher() : m_context(1)
 {
 	if (!LoadAddresses(File::GetUserPath(F_MEMORYWATCHERLOCATIONS_IDX)))
 		return;
 	if (!OpenSocket(File::GetUserPath(F_MEMORYWATCHERSOCKET_IDX)))
-		return;
+	  return;
 	m_running = true;
-	m_watcher_thread = std::thread(&MemoryWatcher::WatcherThread, this);
-}
-
-MemoryWatcher::~MemoryWatcher()
-{
-	if (!m_running)
-		return;
-
-	m_running = false;
-	m_watcher_thread.join();
-	close(m_fd);
 }
 
 bool MemoryWatcher::LoadAddresses(const std::string& path)
@@ -62,12 +46,26 @@ void MemoryWatcher::ParseLine(const std::string& line)
 
 bool MemoryWatcher::OpenSocket(const std::string& path)
 {
-	memset(&m_addr, 0, sizeof(m_addr));
-	m_addr.sun_family = AF_UNIX;
-	strncpy(m_addr.sun_path, path.c_str(), sizeof(m_addr.sun_path) - 1);
-
-	m_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-	return m_fd >= 0;
+  std::cout << "Connecting zmq socket to " << path << std::endl;
+  
+  if (!File::Exists(path))
+  {
+    std::cout << "Socket does not exist!" << std::endl;
+    return false;
+  }
+  
+  m_socket = std::make_unique<zmq::socket_t> (m_context, ZMQ_REQ);
+  try
+  {
+    m_socket->connect(("ipc://" + path).c_str());
+  }
+  catch (zmq::error_t& e)
+  {
+    std::cout << "Error connecting socket: " << e.what() << std::endl;
+    return false;
+  }
+  std::cout << "Connected zmq socket to " << path << std::endl;
+  return true;
 }
 
 u32 MemoryWatcher::ChasePointer(const std::string& line)
@@ -78,37 +76,40 @@ u32 MemoryWatcher::ChasePointer(const std::string& line)
 	return value;
 }
 
-std::string MemoryWatcher::ComposeMessage(const std::string& line, u32 value)
+std::string MemoryWatcher::ComposeMessages()
 {
 	std::stringstream message_stream;
-	message_stream << line << '\n' << std::hex << value;
+	message_stream << std::hex;
+	
+	for (auto& entry : m_values)
+	{
+		std::string address = entry.first;
+		u32& current_value = entry.second;
+
+		u32 new_value = ChasePointer(address);
+		if (new_value != current_value)
+		{
+			// Update the value
+			current_value = new_value;
+      message_stream << address << '\n' << new_value << '\n';
+		}
+	}
+	
 	return message_stream.str();
 }
 
-void MemoryWatcher::WatcherThread()
+void MemoryWatcher::Poll()
 {
-	while (m_running)
-	{
-		for (auto& entry : m_values)
-		{
-			std::string address = entry.first;
-			u32& current_value = entry.second;
-
-			u32 new_value = ChasePointer(address);
-			if (new_value != current_value)
-			{
-				// Update the value
-				current_value = new_value;
-				std::string message = ComposeMessage(address, new_value);
-				sendto(
-					m_fd,
-					message.c_str(),
-					message.size() + 1,
-					0,
-					reinterpret_cast<sockaddr*>(&m_addr),
-					sizeof(m_addr));
-			}
-		}
-		Common::SleepCurrentThread(SLEEP_DURATION);
-	}
+  if (!m_running) return;
+  
+  std::string message = ComposeMessages();
+  
+  zmq::message_t zmq_msg (message.size());
+  memcpy (zmq_msg.data (), message.c_str(), message.size());
+  m_socket->send (zmq_msg);
+  
+  //TODO: do something with this request
+  zmq::message_t request;
+  m_socket->recv (&request);
 }
+

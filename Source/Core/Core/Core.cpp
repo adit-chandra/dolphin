@@ -5,7 +5,6 @@
 #include <atomic>
 #include <cctype>
 #include <cstring>
-#include <zmq.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -117,8 +116,6 @@ static bool s_is_throttler_temp_disabled = false;
 static std::unique_ptr<MemoryWatcher> s_memory_watcher;
 #endif
 
-static std::unique_ptr<zmq::socket_t> s_rpc_socket;
-
 #ifdef ThreadLocalStorage
 static ThreadLocalStorage bool tls_is_cpu_thread = false;
 #else
@@ -151,16 +148,9 @@ void FrameUpdateOnCPUThread()
 
 void FrameAdvance()
 {
-  std::cout << "Waiting for client request." << std::endl;
-  
-  zmq::message_t request;
-  s_rpc_socket->recv (&request);
-  std::cout << "Received Hello" << std::endl;
-
-  std::cout << "Sending reply to client." << std::endl;
-  zmq::message_t reply (5);
-  memcpy (reply.data (), "World", 5);
-  s_rpc_socket->send (reply);
+#ifdef USE_MEMORYWATCHER
+  s_memory_watcher->Poll();
+#endif
 }
 
 // Display messages and return values
@@ -381,13 +371,6 @@ static void CpuThread()
 	s_memory_watcher = std::make_unique<MemoryWatcher>();
 #endif
   
-  zmq::context_t context(1);
-  s_rpc_socket = std::make_unique<zmq::socket_t> (context, ZMQ_REP);
-  std::string addr = "ipc://test";
-  std::cout << "Binding rpc socket to " << addr << std::endl;
-  s_rpc_socket->bind(addr.c_str());
-  std::cout << "Bound rpc socket to " << addr << std::endl;
-
 	// Enter CPU run loop. When we leave it - we are done.
 	CPU::Run();
 

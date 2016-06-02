@@ -4,12 +4,9 @@
 
 #pragma once
 
-#include <atomic>
 #include <map>
-#include <thread>
 #include <vector>
-#include <sys/socket.h>
-#include <sys/un.h>
+#include <zmq.hpp>
 
 // MemoryWatcher reads a file containing in-game memory addresses and outputs
 // changes to those memory addresses to a unix domain socket as the game runs.
@@ -23,7 +20,7 @@ class MemoryWatcher final
 {
 public:
 	MemoryWatcher();
-	~MemoryWatcher();
+	void Poll();
 
 private:
 	bool LoadAddresses(const std::string& path);
@@ -31,15 +28,12 @@ private:
 
 	void ParseLine(const std::string& line);
 	u32 ChasePointer(const std::string& line);
-	std::string ComposeMessage(const std::string& line, u32 value);
-
-	void WatcherThread();
-
-	std::thread m_watcher_thread;
-	std::atomic_bool m_running{false};
-
-	int m_fd;
-	sockaddr_un m_addr;
+	
+	std::string ComposeMessages();
+	
+	bool m_running{false};
+	zmq::context_t m_context;
+  std::unique_ptr<zmq::socket_t> m_socket;
 
 	// Address as stored in the file -> list of offsets to follow
 	std::map<std::string, std::vector<u32>> m_addresses;
