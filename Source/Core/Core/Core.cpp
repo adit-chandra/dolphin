@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cctype>
 #include <cstring>
+#include <zmq.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -115,6 +116,8 @@ static bool s_is_throttler_temp_disabled = false;
 #ifdef USE_MEMORYWATCHER
 static std::unique_ptr<MemoryWatcher> s_memory_watcher;
 #endif
+
+static std::unique_ptr<zmq::socket_t> s_rpc_socket;
 
 #ifdef ThreadLocalStorage
 static ThreadLocalStorage bool tls_is_cpu_thread = false;

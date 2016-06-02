@@ -28,6 +28,7 @@ bool GetIsThrottlerTempDisabled();
 void SetIsThrottlerTempDisabled(bool disable);
 
 void Callback_VideoCopiedToXFB(bool video_update);
+void FrameAdvance();
 
 enum EState
 {

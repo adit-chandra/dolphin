@@ -18,6 +18,7 @@
 #include "Core/HW/VideoInterface.h"
 #include "VideoCommon/VideoBackendBase.h"
 #include "VideoCommon/VideoConfig.h"
+#include <zmq.hpp>
 
 namespace VideoInterface
 {
