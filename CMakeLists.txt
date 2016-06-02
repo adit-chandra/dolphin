@@ -563,6 +563,9 @@ if(USE_EGL)
 	add_definitions(-DUSE_EGL=1)
 endif()
 
+include(FindZMQ REQUIRED)
+list(APPEND LIBS ${ZMQ_LIBRARIES})
+
 if(ENABLE_EVDEV)
 	include(FindLibudev REQUIRED)
 	include(FindLibevdev REQUIRED)
