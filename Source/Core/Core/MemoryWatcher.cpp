@@ -13,7 +13,11 @@
 MemoryWatcher::MemoryWatcher() : m_context(1)
 {
 	if (!LoadAddresses(File::GetUserPath(F_MEMORYWATCHERLOCATIONS_IDX)))
+	{
+	  std::cout << "Failed to load MemoryWatcher addresses. Not watching memory." << std::endl;
 		return;
+	}
+	
 	if (!OpenSocket(File::GetUserPath(F_MEMORYWATCHERSOCKET_IDX)))
 	  return;
 	m_running = true;
@@ -23,7 +27,10 @@ bool MemoryWatcher::LoadAddresses(const std::string& path)
 {
 	std::ifstream locations(path);
 	if (!locations)
+	{
+	  std::cout << "No MemoryWatcher Locations." << std::endl;
 		return false;
+	}
 
 	std::string line;
 	while (std::getline(locations, line))
