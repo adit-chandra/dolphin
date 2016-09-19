@@ -50,6 +50,10 @@ bundled with Dolphin and used if they're not installed on your system. CMake
 will inform you if a bundled library is used or if you need to install any
 missing packages yourself.
 
+### Ubuntu 16.04
+
+`sudo apt-get-install build-essential cmake libevdev-dev libudev-dev libgl1-mesa-dev libusb-1.0.0-dev libao-dev libpulse-dev libxrandr-dev libopenal-dev libasound2-dev libzmq3-dev libgtk2.0-dev libpng12-dev`
+
 ### Build Steps:
 1. `mkdir Build`
 2. `cd Build`
