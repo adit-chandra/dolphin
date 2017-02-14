@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 // TODO: ugly
 #ifdef _WIN32
@@ -73,6 +74,8 @@ void VideoBackendBase::ClearList()
 
 void VideoBackendBase::ActivateBackend(const std::string& name)
 {
+  std::cout << "Attempting to use '" << name << "' video backend." << std::endl;
+
 	// If empty, set it to the default backend (expected behavior)
 	if (name.empty())
 		g_video_backend = s_default_backend;
@@ -81,8 +84,10 @@ void VideoBackendBase::ActivateBackend(const std::string& name)
 		return name == backend->GetName();
 	});
 
-	if (iter == g_available_video_backends.end())
+	if (iter == g_available_video_backends.end()) {
+	  std::cout << "Video backend not found. Defaulting to " << g_video_backend->GetName() << std::endl;
 		return;
-
+  }
+  
 	g_video_backend = iter->get();
 }
