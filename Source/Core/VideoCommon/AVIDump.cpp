@@ -7,11 +7,13 @@
 #endif
 
 #include <string>
+#include <iostream>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/mathematics.h>
+#include <libavutil/opt.h>
 #include <libswscale/swscale.h>
 }
 
@@ -37,7 +39,8 @@ static AVFormatContext* s_format_context = nullptr;
 static AVStream* s_stream = nullptr;
 static AVFrame* s_src_frame = nullptr;
 static AVFrame* s_scaled_frame = nullptr;
-static AVPixelFormat s_pix_fmt = AV_PIX_FMT_BGR24;
+//static AVPixelFormat s_pix_fmt = AV_PIX_FMT_BGR24;
+static AVPixelFormat s_pix_fmt = AV_PIX_FMT_YUV420P;
 static SwsContext* s_sws_context = nullptr;
 static int s_width;
 static int s_height;
@@ -55,6 +58,7 @@ static void InitAVCodec()
   if (first_run)
   {
     av_register_all();
+    avformat_network_init();
     first_run = false;
   }
 }
@@ -81,53 +85,71 @@ bool AVIDump::Start(int w, int h)
 
 bool AVIDump::CreateVideoFile()
 {
-  AVCodec* codec = nullptr;
+  const char url[] = "rtmp://localhost/live";
+  //const char url[] = "framedump.flv";
 
-  s_format_context = avformat_alloc_context();
-  std::stringstream s_file_index_str;
-  s_file_index_str << s_file_index;
-  snprintf(s_format_context->filename, sizeof(s_format_context->filename), "%s",
-           (File::GetUserPath(D_DUMPFRAMES_IDX) + "framedump" + s_file_index_str.str() + ".avi")
-               .c_str());
-  File::CreateFullPath(s_format_context->filename);
-
-  // Ask to delete file
-  if (File::Exists(s_format_context->filename))
+  //AVOutputFormat* output_format = av_guess_format("rtmp", url, nullptr);
+  AVOutputFormat* output_format = av_guess_format("flv", url, nullptr);
+  if (!output_format) return false;
+  avformat_alloc_output_context2(&s_format_context, output_format, nullptr, url);
+  s_format_context->oformat->video_codec = AV_CODEC_ID_H264;
+  //avformat_alloc_context();
+  
+  if (false)
   {
-    if (SConfig::GetInstance().m_DumpFramesSilent ||
-        AskYesNoT("Delete the existing file '%s'?", s_format_context->filename))
+    std::stringstream s_file_index_str;
+    s_file_index_str << s_file_index;
+    snprintf(s_format_context->filename, sizeof(s_format_context->filename), "%s",
+             (File::GetUserPath(D_DUMPFRAMES_IDX) + "framedump" + s_file_index_str.str() + ".flv")
+                 .c_str());
+    File::CreateFullPath(s_format_context->filename);
+
+    // Ask to delete file
+    if (File::Exists(s_format_context->filename))
     {
-      File::Delete(s_format_context->filename);
-    }
-    else
-    {
-      // Stop and cancel dumping the video
-      return false;
+      if (SConfig::GetInstance().m_DumpFramesSilent ||
+          AskYesNoT("Delete the existing file '%s'?", s_format_context->filename))
+      {
+        File::Delete(s_format_context->filename);
+      }
+      else
+      {
+        // Stop and cancel dumping the video
+        return false;
+      }
     }
   }
 
-  if (!(s_format_context->oformat = av_guess_format("avi", nullptr, nullptr)) ||
-      !(s_stream = avformat_new_stream(s_format_context, codec)))
+  AVCodec* codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+  //s_format_context->flags |= AVFMT_GLOBALHEADER;
+  
+  if (!(s_stream = avformat_new_stream(s_format_context, codec)))
   {
     return false;
   }
+  s_stream->id = s_format_context->nb_streams-1;
+  
+  AVCodecContext* context = s_stream->codec;
+  context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+  //context->codec_id =
+  //    g_Config.bUseFFV1 ? AV_CODEC_ID_FFV1 : s_format_context->oformat->video_codec;
+  context->codec_id = AV_CODEC_ID_H264;
+  //if (!g_Config.bUseFFV1)
+  //  context->codec_tag =
+  //      MKTAG('X', 'V', 'I', 'D');  // Force XVID FourCC for better compatibility
+  context->codec_type = AVMEDIA_TYPE_VIDEO;
+  //context->bit_rate = 400000;
+  context->rc_max_rate = 3000000;
+  context->rc_buffer_size = 6000000;
+  context->width = s_width;
+  context->height = s_height;
+  context->time_base.num = 1;
+  context->time_base.den = VideoInterface::GetTargetRefreshRate();
+  context->gop_size = 12;
+  context->pix_fmt = g_Config.bUseFFV1 ? AV_PIX_FMT_BGRA : AV_PIX_FMT_YUV420P;
+  //av_opt_set(context->priv_data, "preset", "veryfast", 0);
 
-  s_stream->codec->codec_id =
-      g_Config.bUseFFV1 ? AV_CODEC_ID_FFV1 : s_format_context->oformat->video_codec;
-  if (!g_Config.bUseFFV1)
-    s_stream->codec->codec_tag =
-        MKTAG('X', 'V', 'I', 'D');  // Force XVID FourCC for better compatibility
-  s_stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-  s_stream->codec->bit_rate = 400000;
-  s_stream->codec->width = s_width;
-  s_stream->codec->height = s_height;
-  s_stream->codec->time_base.num = 1;
-  s_stream->codec->time_base.den = VideoInterface::GetTargetRefreshRate();
-  s_stream->codec->gop_size = 12;
-  s_stream->codec->pix_fmt = g_Config.bUseFFV1 ? AV_PIX_FMT_BGRA : AV_PIX_FMT_YUV420P;
-
-  if (!(codec = avcodec_find_encoder(s_stream->codec->codec_id)) ||
-      (avcodec_open2(s_stream->codec, codec, nullptr) < 0))
+  if ((avcodec_open2(context, codec, nullptr) < 0))
   {
     return false;
   }
@@ -135,7 +157,7 @@ bool AVIDump::CreateVideoFile()
   s_src_frame = av_frame_alloc();
   s_scaled_frame = av_frame_alloc();
 
-  s_scaled_frame->format = s_stream->codec->pix_fmt;
+  s_scaled_frame->format = context->pix_fmt;
   s_scaled_frame->width = s_width;
   s_scaled_frame->height = s_height;
 
@@ -143,7 +165,7 @@ bool AVIDump::CreateVideoFile()
   if (av_frame_get_buffer(s_scaled_frame, 1))
     return false;
 #else
-  if (avcodec_default_get_buffer(s_stream->codec, s_scaled_frame))
+  if (avcodec_default_get_buffer(context, s_scaled_frame))
     return false;
 #endif
 
@@ -157,6 +179,8 @@ bool AVIDump::CreateVideoFile()
 
   OSD::AddMessage(StringFromFormat("Dumping Frames to \"%s\" (%dx%d)", s_format_context->filename,
                                    s_width, s_height));
+
+  av_dump_format(s_format_context, 0, url, 1);
 
   return true;
 }
@@ -178,7 +202,7 @@ void AVIDump::AddFrame(const u8* data, int width, int height, int stride, const 
     s_last_frame_is_valid = false;
   }
 
-  CheckResolution(width, height);
+  //CheckResolution(width, height);
   s_src_frame->data[0] = const_cast<u8*>(data);
   s_src_frame->linesize[0] = stride;
   s_src_frame->format = s_pix_fmt;
@@ -228,7 +252,7 @@ void AVIDump::AddFrame(const u8* data, int width, int height, int stride, const 
     s_last_pts = pts_in_ticks;
     error = avcodec_encode_video2(s_stream->codec, &pkt, s_scaled_frame, &got_packet);
   }
-  while (!error && got_packet)
+  if (!error && got_packet)
   {
     // Write the compressed frame in the media file.
     if (pkt.pts != (s64)AV_NOPTS_VALUE)
@@ -245,10 +269,6 @@ void AVIDump::AddFrame(const u8* data, int width, int height, int stride, const 
 #endif
     pkt.stream_index = s_stream->index;
     av_interleaved_write_frame(s_format_context, &pkt);
-
-    // Handle delayed frames.
-    PreparePacket(&pkt);
-    error = avcodec_encode_video2(s_stream->codec, &pkt, nullptr, &got_packet);
   }
   if (error)
     ERROR_LOG(VIDEO, "Error while encoding video: %d", error);
@@ -256,15 +276,37 @@ void AVIDump::AddFrame(const u8* data, int width, int height, int stride, const 
 
 void AVIDump::Stop()
 {
+/*
+  AVPacket pkt;
+  int got_packet = 1;
+  int error = 0;
+
+  while (got_packet)
+  {
+    // Handle delayed frames.
+    PreparePacket(&pkt);
+    error = avcodec_encode_video2(s_stream->codec, &pkt, nullptr, &got_packet);
+    if (error)
+    {
+      ERROR_LOG(VIDEO, "Error while stopping video: %d", error);
+      break;
+    }
+    
+    pkt.stream_index = s_stream->index;
+    av_interleaved_write_frame(s_format_context, &pkt);
+  }
+*/
   av_write_trailer(s_format_context);
   CloseVideoFile();
   s_file_index = 0;
   NOTICE_LOG(VIDEO, "Stopping frame dump");
   OSD::AddMessage("Stopped dumping frames");
+  std::cout << "Stopped dumping frames\n";
 }
 
 void AVIDump::CloseVideoFile()
 {
+/*
   if (s_stream)
   {
     if (s_stream->codec)
@@ -276,7 +318,7 @@ void AVIDump::CloseVideoFile()
     }
     av_freep(&s_stream);
   }
-
+*/
   av_frame_free(&s_src_frame);
   av_frame_free(&s_scaled_frame);
 
@@ -284,7 +326,7 @@ void AVIDump::CloseVideoFile()
   {
     if (s_format_context->pb)
       avio_close(s_format_context->pb);
-    av_freep(&s_format_context);
+    avformat_free_context(s_format_context);
   }
 
   if (s_sws_context)
