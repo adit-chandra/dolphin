@@ -85,8 +85,8 @@ bool AVIDump::Start(int w, int h)
 
 bool AVIDump::CreateVideoFile()
 {
-  const char url[] = "rtmp://localhost/live";
-  //const char url[] = "framedump.flv";
+  //const char url[] = "rtmp://localhost/live";
+  const char url[] = "framedump.flv";
 
   //AVOutputFormat* output_format = av_guess_format("rtmp", url, nullptr);
   AVOutputFormat* output_format = av_guess_format("flv", url, nullptr);
@@ -276,12 +276,10 @@ void AVIDump::AddFrame(const u8* data, int width, int height, int stride, const 
 
 void AVIDump::Stop()
 {
-/*
   AVPacket pkt;
-  int got_packet = 1;
-  int error = 0;
+  int error, got_packet;
 
-  while (got_packet)
+  while (true)
   {
     // Handle delayed frames.
     PreparePacket(&pkt);
@@ -292,10 +290,26 @@ void AVIDump::Stop()
       break;
     }
     
+    if (!got_packet)
+      break;
+    
+    // Write the compressed frame in the media file.
+    if (pkt.pts != (s64)AV_NOPTS_VALUE)
+    {
+      pkt.pts = av_rescale_q(pkt.pts, s_stream->codec->time_base, s_stream->time_base);
+    }
+    if (pkt.dts != (s64)AV_NOPTS_VALUE)
+    {
+      pkt.dts = av_rescale_q(pkt.dts, s_stream->codec->time_base, s_stream->time_base);
+    }
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(56, 60, 100)
+    if (s_stream->codec->coded_frame->key_frame)
+      pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
     pkt.stream_index = s_stream->index;
     av_interleaved_write_frame(s_format_context, &pkt);
   }
-*/
+
   av_write_trailer(s_format_context);
   CloseVideoFile();
   s_file_index = 0;
