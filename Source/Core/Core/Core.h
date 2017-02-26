@@ -69,6 +69,7 @@ void SetStateFileName(const std::string& val);
 void SetBlockStart(u32 addr);
 
 void FrameUpdateOnCPUThread();
+void FrameAdvance();
 
 bool ShouldSkipFrame(int skipped);
 void VideoThrottle();
