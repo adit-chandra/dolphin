@@ -111,6 +111,10 @@ static bool s_request_refresh_info = false;
 static int s_pause_and_lock_depth = 0;
 static bool s_is_throttler_temp_disabled = false;
 
+#ifdef USE_MEMORYWATCHER
+static std::unique_ptr<MemoryWatcher> s_memory_watcher;
+#endif
+
 struct HostJob
 {
   std::function<void()> job;
@@ -153,6 +157,13 @@ void FrameUpdateOnCPUThread()
 {
   if (NetPlay::IsNetPlayRunning())
     NetPlayClient::SendTimeBase();
+}
+
+void FrameAdvance()
+{
+#ifdef USE_MEMORYWATCHER
+  s_memory_watcher->Step();
+#endif
 }
 
 // Display messages and return values
@@ -289,7 +300,7 @@ void Stop()  // - Hammertime!
 #endif
 
 #ifdef USE_MEMORYWATCHER
-  MemoryWatcher::Shutdown();
+  s_memory_watcher.reset();
 #endif
 }
 
@@ -382,7 +393,7 @@ static void CpuThread()
 #endif
 
 #ifdef USE_MEMORYWATCHER
-  MemoryWatcher::Init();
+  s_memory_watcher = std::make_unique<MemoryWatcher>();
 #endif
 
   // Enter CPU run loop. When we leave it - we are done.
