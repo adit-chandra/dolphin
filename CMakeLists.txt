@@ -26,6 +26,7 @@ option(ENABLE_PULSEAUDIO "Enables PulseAudio sound backend" ON)
 option(ENABLE_OPENAL "Enables OpenAL sound backend" ON)
 option(ENABLE_LLVM "Enables LLVM support, for disassembly" ON)
 option(ENABLE_BLUEZ "Enables bluetooth support" ON)
+option(ENABLE_ZMQ "Use ZMQ for MemoryWatcher" OFF)
 
 # Maintainers: if you consider blanket disabling this for your users, please
 # consider the following points:
@@ -529,6 +530,17 @@ if(ENABLE_EVDEV)
     include_directories(${LIBUDEV_INCLUDE_DIR} ${LIBEVDEV_INCLUDE_DIR})
   else()
     message(FATAL_ERROR "Couldn't find libevdev and/or libudev. Can't build evdev controller backend.\nDisable ENABLE_EVDEV if you wish to build without controller support")
+  endif()
+endif()
+
+if(ENABLE_ZMQ)
+  include(FindZMQ REQUIRED)
+  if(ZMQ_FOUND)
+    message(STATUS "libzmq found, using for memory watcher")
+    add_definitions(-DUSE_ZMQ=1)
+    list(APPEND LIBS ${ZMQ_LIBRARIES})
+	else()
+		message(FATAL_ERROR "Couldn't find libzmq. \nDisable ENABLE_ZMQ if you wish to build without zmq support")
   endif()
 endif()
 
