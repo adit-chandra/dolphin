@@ -7,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include <unistd.h>
+#include <iostream>
 
 #include "Common/FileUtil.h"
 #include "Core/CoreTiming.h"
@@ -30,7 +31,13 @@ MemoryWatcher::~MemoryWatcher()
     return;
 
   m_running = false;
+
+#ifndef USE_ZMQ
   close(m_fd);
+#else
+  zmq_close(m_socket);
+  zmq_ctx_destroy(m_context);
+#endif
 }
 
 bool MemoryWatcher::LoadAddresses(const std::string& path)
@@ -58,14 +65,50 @@ void MemoryWatcher::ParseLine(const std::string& line)
     m_addresses[line].push_back(offset);
 }
 
+static const char* ZMQErrorString()
+{
+  return zmq_strerror(zmq_errno());
+}
+
 bool MemoryWatcher::OpenSocket(const std::string& path)
 {
+#ifndef USE_ZMQ
   memset(&m_addr, 0, sizeof(m_addr));
   m_addr.sun_family = AF_UNIX;
   strncpy(m_addr.sun_path, path.c_str(), sizeof(m_addr.sun_path) - 1);
 
   m_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
   return m_fd >= 0;
+#else
+  std::cout << "Connecting zmq socket to " << path << std::endl;
+  
+  if (!File::Exists(path))
+  {
+    std::cout << "Socket does not exist!" << std::endl;
+    return false;
+  }
+  
+  if (!(m_context = zmq_ctx_new()))
+  {
+    std::cout << "Failed to allocate zmq context: " << ZMQErrorString() << std::endl;
+    return false;
+  }
+
+  if(!(m_socket = zmq_socket(m_context, ZMQ_REQ)))
+  {
+    std::cout << "Failed to create zmq socket: " << ZMQErrorString() << std::endl;
+    return false;
+  }
+  
+  if(zmq_connect(m_socket, ("ipc://" + path).c_str()) < 0)
+  {
+    std::cout << "Error connecting socket: " << ZMQErrorString() << std::endl;
+    return false;
+  }
+  
+  std::cout << "Connected zmq socket to " << path << std::endl;
+  return true;
+#endif
 }
 
 u32 MemoryWatcher::ChasePointer(const std::string& line)
@@ -104,5 +147,13 @@ void MemoryWatcher::Step()
     return;
 
   std::string message = ComposeMessages();
+#ifndef USE_ZMQ
   sendto(m_fd, message.c_str(), message.size() + 1, 0, reinterpret_cast<sockaddr*>(&m_addr), sizeof(m_addr));
+#else
+  zmq_send(m_socket, message.c_str(), message.size(), 0);
+
+  // do something with the reply?
+  char buffer[10];
+  zmq_recv(m_socket, buffer, 10, 0);
+#endif
 }
