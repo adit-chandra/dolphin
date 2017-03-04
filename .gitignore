@@ -21,6 +21,9 @@ Source/Core/Common/scmrev.h
 *.VC.opendb
 *.VC.db
 .vs/
+# Ignore some libzmq folders
+Externals/libzmq/bin/
+Externals/libzmq/obj/
 # Ignore build info file created by QtCreator
 CMakeLists.txt.user
 # Ignore files created by posix people
