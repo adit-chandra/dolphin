@@ -28,6 +28,8 @@ Dolphin includes or links code of the following third-party software projects:
    [libpng license](http://www.libpng.org/pub/png/src/libpng-LICENSE.txt)
 - [libusb](http://libusb.info/):
    [LGPLv2.1+](https://github.com/libusb/libusb/blob/master/COPYING)
+- [libzmq](http://zeromq.org/):
+	[GPLv3+](https://github.com/zeromq/libzmq/blob/master/COPYING) or [LGPLv3+](https://github.com/zeromq/libzmq/blob/master/COPYING.LESSER)
 - [LLVM](http://llvm.org/):
    [University of Illinois/NCSA Open Source license](http://llvm.org/docs/DeveloperPolicy.html#license)
 - [LZO](http://www.oberhumer.com/opensource/lzo/):

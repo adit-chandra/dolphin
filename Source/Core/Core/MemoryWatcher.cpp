@@ -6,7 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include <unistd.h>
+//#include <unistd.h>
 #include <iostream>
 
 #include "Common/FileUtil.h"
@@ -17,6 +17,7 @@
 
 MemoryWatcher::MemoryWatcher()
 {
+	std::cout << "Loaded MemoryWatcher" << std::endl;
   m_running = false;
   if (!LoadAddresses(File::GetUserPath(F_MEMORYWATCHERLOCATIONS_IDX)))
     return;
@@ -100,7 +101,8 @@ bool MemoryWatcher::OpenSocket(const std::string& path)
     return false;
   }
   
-  if(zmq_connect(m_socket, ("ipc://" + path).c_str()) < 0)
+  //if(zmq_connect(m_socket, ("ipc://" + path).c_str()) < 0)
+  if (zmq_connect(m_socket, "tcp://localhost:5555") < 0)
   {
     std::cout << "Error connecting socket: " << ZMQErrorString() << std::endl;
     return false;
@@ -143,6 +145,7 @@ std::string MemoryWatcher::ComposeMessages()
 
 void MemoryWatcher::Step()
 {
+	//std::cout << "MemoryWatcher step" << std::endl;
   if (!m_running)
     return;
 

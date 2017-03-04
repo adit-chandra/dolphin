@@ -75,6 +75,7 @@
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/RenderBase.h"
 #include "VideoCommon/VideoBackendBase.h"
+#include <iostream>
 
 // Android and OSX haven't implemented the keyword yet.
 #if defined __ANDROID__ || defined __APPLE__
@@ -165,6 +166,7 @@ void FrameUpdateOnCPUThread()
 
 void FrameAdvance()
 {
+	//std::cout << "Frame advanced" << std::endl;
 #ifdef USE_MEMORYWATCHER
   s_memory_watcher->Step();
 #endif
