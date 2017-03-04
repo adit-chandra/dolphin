@@ -81,13 +81,13 @@ bool MemoryWatcher::OpenSocket(const std::string& path)
   m_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
   return m_fd >= 0;
 #else
-  std::cout << "Connecting zmq socket to " << path << std::endl;
+  /*std::cout << "Connecting zmq socket to " << path << std::endl;*/
   
-  if (!File::Exists(path))
-  {
-    std::cout << "Socket does not exist!" << std::endl;
-    return false;
-  }
+  ////if (!File::Exists(path))
+  ////{
+  ////  std::cout << "Socket does not exist!" << std::endl;
+  ////  return false;
+  ////}
   
   if (!(m_context = zmq_ctx_new()))
   {
