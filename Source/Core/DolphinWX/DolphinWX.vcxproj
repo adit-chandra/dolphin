@@ -54,7 +54,7 @@
       <AdditionalManifestFiles>DolphinWX.manifest;%(AdditionalManifestFiles)</AdditionalManifestFiles>
     </Manifest>
     <PostBuildEvent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">copy /Y "$(ExternalsDir)libzmq\bin\x64\Release\v140\dynamic\libzmq.dll" "$(OutDir)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">copy /Y "$(ExternalsDir)libzmq\bin\x64\Release\v140\dynamic\libzmq.dll" "$(BinaryOutputDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
