@@ -16,6 +16,7 @@ option(ENABLE_LTO "Enables Link Time Optimization" OFF)
 option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
 option(ENABLE_HEADLESS "Enables running Dolphin as a headless variant" OFF)
 option(USE_AO "Enables ao sound backend" ON)
+option(USE_PULSE "Enables pulseausio sound backend" ON)
 
 # Enable SDL for default on operating systems that aren't OSX, Android, Linux or Windows.
 if(NOT APPLE AND NOT ANDROID AND NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND NOT MSVC)
@@ -457,7 +458,9 @@ else()
 	message("bluez NOT found, disabling bluetooth support")
 endif(BLUEZ_FOUND)
 
-check_lib(PULSEAUDIO libpulse pulse QUIET)
+if(USE_PULSE)
+  check_lib(PULSEAUDIO libpulse pulse QUIET)
+endif(USE_PULSE)
 if(PULSEAUDIO_FOUND)
 	add_definitions(-DHAVE_PULSEAUDIO=1)
 	message("PulseAudio found, enabling PulseAudio sound backend")
