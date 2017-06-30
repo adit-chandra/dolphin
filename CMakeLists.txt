@@ -15,6 +15,7 @@ option(ENABLE_PCH "Use PCH to speed up compilation" ON)
 option(ENABLE_LTO "Enables Link Time Optimization" OFF)
 option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
 option(ENABLE_HEADLESS "Enables running Dolphin as a headless variant" OFF)
+option(USE_AO "Enables ao sound backend" ON)
 
 # Enable SDL for default on operating systems that aren't OSX, Android, Linux or Windows.
 if(NOT APPLE AND NOT ANDROID AND NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Linux" AND NOT MSVC)
@@ -436,7 +437,9 @@ else()
 	message("ALSA NOT found, disabling ALSA sound backend")
 endif(ALSA_FOUND)
 
-check_lib(AO ao ao QUIET)
+if(USE_AO)
+  check_lib(AO ao ao QUIET)
+endif(USE_AO)
 if(AO_FOUND)
 	add_definitions(-DHAVE_AO=1)
 	message("ao found, enabling ao sound backend")
