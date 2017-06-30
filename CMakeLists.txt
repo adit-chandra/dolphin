@@ -571,6 +571,7 @@ endif()
 
 include(FindZMQ REQUIRED)
 list(APPEND LIBS ${ZMQ_LIBRARIES})
+include_directories(${ZMQ_INCLUDE_DIRS})
 
 if(ENABLE_EVDEV)
 	include(FindLibudev REQUIRED)
