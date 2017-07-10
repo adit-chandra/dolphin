@@ -54,4 +54,4 @@ while True:
     mw.advance()
 
     #  Do some 'work'
-    # time.sleep(1)
+    time.sleep(.1)

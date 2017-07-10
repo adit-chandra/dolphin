@@ -98,12 +98,13 @@ PipeDevice::PipeDevice(int port, const std::string& name) : m_name(name)
     std::cout << "Failed to create zmq socket: " << ZMQErrorString() << std::endl;
   }
 
-  if (zmq_connect(m_socket, ("tcp://localhost:" + std::to_string(port)).c_str()) < 0)
+  std::string address = "tcp://localhost:" + std::to_string(port);
+  if (zmq_connect(m_socket, address.c_str()) < 0)
   {
     std::cout << "Error connecting socket: " << ZMQErrorString() << std::endl;
   }
 
-  std::cout << "Connected pipe device to tcp://localhost:" << port << std::endl;
+  std::cout << "Connected pipe device to " << address << std::endl;
 #endif
   for (const auto& tok : s_button_tokens)
   {
@@ -158,11 +159,10 @@ void PipeDevice::UpdateInput()
   int rc = zmq_msg_init(&msg);
   //assert(rc == 0);
 
-  rc = zmq_recvmsg(m_socket, &msg, ZMQ_NOBLOCK);
+  rc = zmq_recvmsg(m_socket, &msg, ZMQ_DONTWAIT);
 
-  if (rc == 0)
+  if (rc >= 0)
   {
-    std::cout << "Got data" << std::endl;
     const char* data = static_cast<char*>(zmq_msg_data(&msg));
     size_t size = zmq_msg_size(&msg);
     size_t prev = 0;
@@ -178,8 +178,8 @@ void PipeDevice::UpdateInput()
   }
   else
   {
-    std::cout << ZMQErrorString() << std::endl;
-    //assert(zmq_errno() == EAGAIN);
+    if(zmq_errno() != EAGAIN)
+      std::cout << ZMQErrorString() << std::endl;
   }
 
   zmq_msg_close (&msg);
