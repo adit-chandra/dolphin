@@ -66,10 +66,12 @@ void MemoryWatcher::ParseLine(const std::string& line)
     m_addresses[line].push_back(offset);
 }
 
+#ifdef USE_ZMQ
 static const char* ZMQErrorString()
 {
   return zmq_strerror(zmq_errno());
 }
+#endif
 
 bool MemoryWatcher::OpenSocket(const std::string& path)
 {
@@ -81,14 +83,6 @@ bool MemoryWatcher::OpenSocket(const std::string& path)
   m_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
   return m_fd >= 0;
 #else
-  /*std::cout << "Connecting zmq socket to " << path << std::endl;*/
-  
-  ////if (!File::Exists(path))
-  ////{
-  ////  std::cout << "Socket does not exist!" << std::endl;
-  ////  return false;
-  ////}
-  
   if (!(m_context = zmq_ctx_new()))
   {
     std::cout << "Failed to allocate zmq context: " << ZMQErrorString() << std::endl;
@@ -101,14 +95,13 @@ bool MemoryWatcher::OpenSocket(const std::string& path)
     return false;
   }
   
-  //if(zmq_connect(m_socket, ("ipc://" + path).c_str()) < 0)
   if (zmq_connect(m_socket, "tcp://localhost:5555") < 0)
   {
     std::cout << "Error connecting socket: " << ZMQErrorString() << std::endl;
     return false;
   }
   
-  std::cout << "Connected zmq socket to " << path << std::endl;
+  std::cout << "Connected MemoryWatcher to " << path << std::endl;
   return true;
 #endif
 }

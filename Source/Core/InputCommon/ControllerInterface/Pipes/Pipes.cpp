@@ -14,6 +14,15 @@
 #include <unistd.h>
 #include <vector>
 
+#ifdef USE_ZMQ
+#include <zmq.h>
+
+static const char* ZMQErrorString()
+{
+  return zmq_strerror(zmq_errno());
+}
+#endif
+
 #include "Common/FileUtil.h"
 #include "Common/MathUtil.h"
 #include "Common/StringUtil.h"
@@ -57,15 +66,45 @@ void PopulateDevices()
     const File::FSTEntry& child = fst.children[i];
     if (child.isDirectory)
       continue;
+#ifndef USE_ZMQ
     int fd = open(child.physicalName.c_str(), O_RDONLY | O_NONBLOCK);
     if (fd < 0)
       continue;
     g_controller_interface.AddDevice(std::make_shared<PipeDevice>(fd, child.virtualName));
+#else
+    std::ifstream in(child.physicalName);
+    int port;
+    in >> port;
+    g_controller_interface.AddDevice(std::make_shared<PipeDevice>(port, child.virtualName));
+#endif
   }
 }
 
+#ifndef USE_ZMQ
 PipeDevice::PipeDevice(int fd, const std::string& name) : m_fd(fd), m_name(name)
 {
+#else
+PipeDevice::PipeDevice(int port, const std::string& name) : m_name(name)
+{
+  std::cout << "Creating pipe device with port " << port << std::endl;
+
+  if (!(m_context = zmq_ctx_new()))
+  {
+    std::cout << "Failed to allocate zmq context: " << ZMQErrorString() << std::endl;
+  }
+
+  if(!(m_socket = zmq_socket(m_context, ZMQ_PULL)))
+  {
+    std::cout << "Failed to create zmq socket: " << ZMQErrorString() << std::endl;
+  }
+
+  if (zmq_connect(m_socket, ("tcp://localhost:" + std::to_string(port)).c_str()) < 0)
+  {
+    std::cout << "Error connecting socket: " << ZMQErrorString() << std::endl;
+  }
+
+  std::cout << "Connected pipe device to tcp://localhost:" << port << std::endl;
+#endif
   for (const auto& tok : s_button_tokens)
   {
     PipeInput* btn = new PipeInput("Button " + tok);
@@ -85,11 +124,18 @@ PipeDevice::PipeDevice(int fd, const std::string& name) : m_fd(fd), m_name(name)
 
 PipeDevice::~PipeDevice()
 {
+#ifndef USE_ZMQ
   close(m_fd);
+#else
+  zmq_close(m_socket);
+  zmq_ctx_destroy(m_context);
+#endif
 }
+
 
 void PipeDevice::UpdateInput()
 {
+#ifndef USE_ZMQ
   // Read any pending characters off the pipe. If we hit a newline,
   // then dequeue a command off the front of m_buf and parse it.
   char buf[32];
@@ -107,6 +153,37 @@ void PipeDevice::UpdateInput()
     m_buf.erase(0, newline + 1);
     newline = m_buf.find("\n");
   }
+#else
+  zmq_msg_t msg;
+  int rc = zmq_msg_init(&msg);
+  //assert(rc == 0);
+
+  rc = zmq_recvmsg(m_socket, &msg, ZMQ_NOBLOCK);
+
+  if (rc == 0)
+  {
+    std::cout << "Got data" << std::endl;
+    const char* data = static_cast<char*>(zmq_msg_data(&msg));
+    size_t size = zmq_msg_size(&msg);
+    size_t prev = 0;
+    for (size_t next = 0; next < size; ++next)
+    {
+      if (data[next] == '\n')
+      {
+        std::string command(data + prev, next - prev);
+        ParseCommand(command);
+        prev = next + 1;
+      }
+    }
+  }
+  else
+  {
+    std::cout << ZMQErrorString() << std::endl;
+    //assert(zmq_errno() == EAGAIN);
+  }
+
+  zmq_msg_close (&msg);
+#endif
 }
 
 void PipeDevice::AddAxis(const std::string& name, double value)

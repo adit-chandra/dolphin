@@ -27,7 +27,11 @@ void PopulateDevices();
 class PipeDevice : public Core::Device
 {
 public:
+#ifndef USE_ZMQ
   PipeDevice(int fd, const std::string& name);
+#else
+  PipeDevice(int port, const std::string& name);
+#endif
   ~PipeDevice();
 
   void UpdateInput() override;
@@ -50,9 +54,14 @@ private:
   void ParseCommand(const std::string& command);
   void SetAxis(const std::string& entry, double value);
 
+#ifndef USE_ZMQ
   const int m_fd;
-  const std::string m_name;
   std::string m_buf;
+#else
+	void* m_context;
+  void* m_socket;
+#endif
+  const std::string m_name;
   std::map<std::string, PipeInput*> m_buttons;
   std::map<std::string, PipeInput*> m_axes;
 };
