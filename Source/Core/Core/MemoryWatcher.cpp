@@ -17,7 +17,7 @@
 
 MemoryWatcher::MemoryWatcher()
 {
-	std::cout << "Loaded MemoryWatcher" << std::endl;
+  std::cout << "Loading MemoryWatcher" << std::endl;
   m_running = false;
   if (!LoadAddresses(File::GetUserPath(F_MEMORYWATCHERLOCATIONS_IDX)))
     return;
@@ -95,13 +95,14 @@ bool MemoryWatcher::OpenSocket(const std::string& path)
     return false;
   }
   
-  if (zmq_connect(m_socket, "tcp://localhost:5555") < 0)
+  std::string address = "tcp://localhost:5555";
+  if (zmq_connect(m_socket, address.c_str()) < 0)
   {
     std::cout << "Error connecting socket: " << ZMQErrorString() << std::endl;
     return false;
   }
   
-  std::cout << "Connected MemoryWatcher to " << path << std::endl;
+  std::cout << "Connected MemoryWatcher to " << address << std::endl;
   return true;
 #endif
 }
@@ -138,7 +139,6 @@ std::string MemoryWatcher::ComposeMessages()
 
 void MemoryWatcher::Step()
 {
-	//std::cout << "MemoryWatcher step" << std::endl;
   if (!m_running)
     return;
 

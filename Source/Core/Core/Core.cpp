@@ -166,7 +166,6 @@ void FrameUpdateOnCPUThread()
 
 void FrameAdvance()
 {
-	//std::cout << "Frame advanced" << std::endl;
 #ifdef USE_MEMORYWATCHER
   s_memory_watcher->Step();
 #endif

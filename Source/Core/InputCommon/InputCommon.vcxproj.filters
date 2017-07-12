@@ -101,6 +101,7 @@
     <ClCompile Include="ControlReference\ControlReference.cpp">
       <Filter>ControllerInterface</Filter>
     </ClCompile>
+    <ClCompile Include="ControllerInterface\Pipes\Pipes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GCAdapter.h" />
@@ -184,6 +185,7 @@
     <ClInclude Include="ControlReference\ControlReference.h">
       <Filter>ControllerInterface</Filter>
     </ClInclude>
+    <ClInclude Include="ControllerInterface\Pipes\Pipes.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

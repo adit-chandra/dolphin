@@ -11,10 +11,11 @@
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <vector>
 
-#ifdef USE_ZMQ
+#ifndef USE_ZMQ
+#include <unistd.h>
+#else
 #include <zmq.h>
 
 static const char* ZMQErrorString()
